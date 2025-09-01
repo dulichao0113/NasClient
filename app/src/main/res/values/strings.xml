@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">minio demo</string>
+    <string name="action_settings">设置</string>
+    <string name="login">登录</string>
+    <string name="register">注册</string>
+    <string name="username">用户名</string>
+    <string name="email">邮箱</string>
+    <string name="password">密码</string>
+    <string name="already_have_account">已有账号？登录</string>
+    <string name="dont_have_account">还没有账号？注册</string>
+    <string name="select_image">选择图片</string>
+    <string name="upload_image">上传图片</string>
+    <string name="refresh">刷新</string>
+    <string name="logout">退出登录</string>
+</resources>

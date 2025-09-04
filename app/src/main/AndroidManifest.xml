@@ -24,6 +24,8 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MinioDemo"
+        android:largeHeap="true"
+        android:hardwareAccelerated="true"
         android:usesCleartextTraffic="true">
 
         <activity
@@ -57,6 +59,11 @@
             android:name=".ImageViewerActivity"
             android:exported="false"
             android:theme="@style/Theme.MinioDemo.Fullscreen"/>
+
+        <activity
+            android:name=".VideoPlayerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MinioDemo.Fullscreen" />
     </application>
 
 </manifest>

@@ -1,20 +1,23 @@
 package com.example.miniodemo;
 
+import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ImageView;
+import android.widget.VideoView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.viewpager.widget.ViewPager;
 
-import com.example.miniodemo.adapter.LoopImagePagerAdapter;
+import com.example.miniodemo.adapter.MediaPagerAdapter;
 import com.example.miniodemo.model.Image;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class ImageViewerActivity extends AppCompatActivity {
@@ -22,24 +25,27 @@ public class ImageViewerActivity extends AppCompatActivity {
     public static final String EXTRA_POSITION = "position";
 
     private ViewPager viewPager;
-    private LoopImagePagerAdapter adapter;
-    private List<Image> imageList;
-    private List<String> imageUrls;
-    private int currentPosition; // 真实位置（0 ~ imageList.size()-1）
+    private MediaPagerAdapter adapter;
+    private List<Image> mediaList; // 图片+视频列表
+    private int currentPosition;
+    private int lastVirtualPosition = -1;
 
-    // 自动播放相关
+    // 自动播放相关（保持原有逻辑）
     private Handler handler = new Handler(Looper.getMainLooper());
     private boolean isAutoPlaying = false;
-    private static final long INACTIVITY_DELAY = 10000; // 10秒无操作
-    private static final long SLIDE_INTERVAL = 3000; // 3秒切换一张
+    private static final long INACTIVITY_DELAY = 60000;
+    private static final long SLIDE_INTERVAL = 3000;
 
     private final Runnable inactivityRunnable = this::startAutoPlay;
     private final Runnable slideRunnable = new Runnable() {
         @Override
         public void run() {
-            if (isAutoPlaying && imageUrls.size() > 1) {
-                // 计算下一个虚拟位置（保证循环）
-                int nextRealPosition = (currentPosition + 1) % imageUrls.size();
+            if (isAutoPlaying && mediaList.size() > 1) {
+                // 停止当前页面的视频播放（关键）
+                stopCurrentVideo();
+
+                // 计算下一个位置（保持原有循环逻辑）
+                int nextRealPosition = (currentPosition + 1) % mediaList.size();
                 int currentVirtualPosition = viewPager.getCurrentItem();
                 int virtualOffset = currentVirtualPosition - currentPosition;
                 int nextVirtualPosition = nextRealPosition + virtualOffset;
@@ -56,82 +62,101 @@ public class ImageViewerActivity extends AppCompatActivity {
         setContentView(R.layout.activity_image_viewer);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        // 获取传递的图片数据和当前位置
-        imageList = (List<Image>) getIntent().getSerializableExtra(EXTRA_IMAGES);
+        // 获取媒体列表和初始位置
+        mediaList = (List<Image>) getIntent().getSerializableExtra(EXTRA_IMAGES);
         currentPosition = getIntent().getIntExtra(EXTRA_POSITION, 0);
 
-        if (imageList == null || imageList.isEmpty()) {
-            Toast.makeText(this, "没有图片可查看", Toast.LENGTH_SHORT).show();
+        if (mediaList == null || mediaList.isEmpty()) {
+            Toast.makeText(this, "没有媒体可查看", Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
 
-        // 提取图片URL列表
-        imageUrls = new ArrayList<>();
-        for (Image image : imageList) {
-            String url = image.getUrl();
-            if (url != null && !url.isEmpty()) {
-                imageUrls.add(url);
-            }
-        }
-
-        // 初始化ViewPager（注意是ViewPager而非ViewPager2）
+        // 初始化ViewPager
         viewPager = findViewById(R.id.view_pager);
-        adapter = new LoopImagePagerAdapter(this, imageUrls);
+        adapter = new MediaPagerAdapter(this, mediaList);
         viewPager.setAdapter(adapter);
 
-        // 设置初始位置（适配循环逻辑）
-        if (imageUrls.size() > 1) {
+        // 设置初始位置（适配循环）
+        if (mediaList.size() > 1) {
             int initialPosition = Integer.MAX_VALUE / 2;
-            initialPosition -= initialPosition % imageUrls.size();
+            initialPosition -= initialPosition % mediaList.size();
             initialPosition += currentPosition;
             viewPager.setCurrentItem(initialPosition);
         } else {
             viewPager.setCurrentItem(currentPosition);
         }
 
-        // 监听ViewPager页面变化（使用ViewPager的OnPageChangeListener）
+        lastVirtualPosition = viewPager.getCurrentItem();
+//        viewPager.setOffscreenPageLimit(3);
+
+        // 监听页面变化
         viewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
 
             @Override
             public void onPageSelected(int position) {
-                // 更新真实位置（通过取模计算）
-                currentPosition = position % imageUrls.size();
-                resetInactivityTimer(); // 用户手动滑动时重置计时器
+                // 页面切换时，先停止上一个页面的视频
+                if (lastVirtualPosition != -1) {
+                    stopVideoByVirtualPosition(lastVirtualPosition);
+                }
+                // 更新当前位置和上一个位置
+                currentPosition = position % mediaList.size();
+                lastVirtualPosition = position; // 记录当前虚拟位置为下一次的上一个位置
+//                resetInactivityTimer();
             }
 
             @Override
             public void onPageScrollStateChanged(int state) {}
         });
 
-        // 开始监听用户操作
         resetInactivityTimer();
     }
 
-    // 重置无操作计时器
-    private void resetInactivityTimer() {
-        handler.removeCallbacks(inactivityRunnable);
-        handler.removeCallbacks(slideRunnable); // 停止当前自动播放
-        isAutoPlaying = false;
-        handler.postDelayed(inactivityRunnable, INACTIVITY_DELAY); // 重新计时
+    // 停止当前页面的视频播放（自动切换时关键）
+    private void stopCurrentVideo() {
+        stopVideoByVirtualPosition(viewPager.getCurrentItem());
     }
 
-    // 开始自动播放
+    private void stopVideoByVirtualPosition(int virtualPosition) {
+        View view = viewPager.findViewWithTag(virtualPosition);
+        if (view != null) {
+            VideoView videoView = view.findViewById(R.id.vv_media);
+            ImageView ivPlayButton = view.findViewById(R.id.iv_play_button);
+            ImageView ivMedia = view.findViewById(R.id.iv_media);
+            if (videoView != null && videoView.isPlaying()) {
+//                videoView.stopPlayback();
+                // 这里千万不能 stop 或者 release  会导致滑回来的时候视频无法正常播放
+                videoView.pause();
+                ivPlayButton.setVisibility(View.VISIBLE);
+                ivMedia.setVisibility(View.VISIBLE);
+            }
+        }
+    }
+
+    // 重置无操作计时器（保持原有逻辑）
+    private void resetInactivityTimer() {
+        handler.removeCallbacks(inactivityRunnable);
+        handler.removeCallbacks(slideRunnable);
+        isAutoPlaying = false;
+        handler.postDelayed(inactivityRunnable, INACTIVITY_DELAY);
+    }
+
+    // 开始自动播放（保持原有逻辑）
     private void startAutoPlay() {
-        if (imageUrls.size() <= 1) return; // 只有一张图时不自动播放
+        if (mediaList.size() <= 1) return;
         isAutoPlaying = true;
         handler.postDelayed(slideRunnable, SLIDE_INTERVAL);
     }
 
-    // 停止自动播放
+    // 停止自动播放（保持原有逻辑）
     private void stopAutoPlay() {
         isAutoPlaying = false;
         handler.removeCallbacks(slideRunnable);
     }
 
-    // 监听用户触摸事件，重置计时器
+    // 监听用户触摸事件（保持原有逻辑）
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         resetInactivityTimer();
@@ -142,6 +167,7 @@ public class ImageViewerActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         stopAutoPlay();
+        stopCurrentVideo(); // 暂停时停止视频播放
         handler.removeCallbacks(inactivityRunnable);
     }
 
@@ -155,6 +181,6 @@ public class ImageViewerActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         handler.removeCallbacksAndMessages(null);
-        viewPager.removeOnPageChangeListener(null); // 移除监听器
+        viewPager.removeOnPageChangeListener(null);
     }
 }

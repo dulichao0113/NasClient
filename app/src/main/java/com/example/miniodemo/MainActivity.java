@@ -252,11 +252,19 @@ public class MainActivity extends AppCompatActivity {
         adapter.setOnItemClickListener(new ImageAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(int position) {
-                // 点击事件处理
-                Intent intent = new Intent(MainActivity.this, ImageViewerActivity.class);
-                intent.putExtra(ImageViewerActivity.EXTRA_IMAGES, (Serializable) imageList);
-                intent.putExtra(ImageViewerActivity.EXTRA_POSITION, position);
-                startActivity(intent);
+                Image media = imageList.get(position);
+//                if ("video".equals(media.getType())) {
+//                    // 视频点击 - 打开视频播放器
+//                    Intent intent = new Intent(MainActivity.this, VideoPlayerActivity.class);
+//                    intent.putExtra(VideoPlayerActivity.EXTRA_VIDEO, media);
+//                    startActivity(intent);
+//                } else {
+//                    // 图片点击 - 打开图片查看器
+                    Intent intent = new Intent(MainActivity.this, ImageViewerActivity.class);
+                    intent.putExtra(ImageViewerActivity.EXTRA_IMAGES, (Serializable) imageList);
+                    intent.putExtra(ImageViewerActivity.EXTRA_POSITION, position);
+                    startActivity(intent);
+//                }
             }
 
             @Override
@@ -311,10 +319,11 @@ public class MainActivity extends AppCompatActivity {
      */
     private void openMultipleImagePicker() {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-        intent.setType("image/*");
+        intent.setType("*/*"); // 支持所有类型
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/*", "video/*"});
         intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
-        intent.putExtra(Intent.EXTRA_TITLE, "选择多张图片");
-        multipleImageLauncher.launch(Intent.createChooser(intent, "选择图片"));
+        intent.putExtra(Intent.EXTRA_TITLE, "选择图片或视频");
+        multipleImageLauncher.launch(Intent.createChooser(intent, "选择媒体文件"));
     }
 
     /**
@@ -462,10 +471,16 @@ public class MainActivity extends AppCompatActivity {
             return ".jpg";
         }
         switch (mimeType) {
+            // 图片类型
             case "image/jpeg": return ".jpg";
             case "image/png": return ".png";
             case "image/gif": return ".gif";
             case "image/webp": return ".webp";
+            // 视频类型
+            case "video/mp4": return ".mp4";
+            case "video/3gpp": return ".3gp";
+            case "video/mpeg": return ".mpeg";
+            case "video/quicktime": return ".mov";
             default: return ".jpg";
         }
     }

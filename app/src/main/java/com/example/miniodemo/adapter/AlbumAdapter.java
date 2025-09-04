@@ -47,7 +47,6 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
         holder.tvAlbumName.setText(album.getName());
         // 设置图片数量（假设有getImageCount()方法）
         holder.tvImageCount.setText(album.getImageCount() + " 张图片");
-
         // 加载封面图（使用Glide，复用现有占位图和错误图）
         String coverUrl = album.getFirstImageUrl();
         Glide.with(context)

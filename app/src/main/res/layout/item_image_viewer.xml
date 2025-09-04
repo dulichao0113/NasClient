@@ -1,16 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="50dp">
+    android:layout_height="match_parent">
+    <!-- 视频播放视图 -->
+    <VideoView
+        android:id="@+id/vv_media"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone"/>
 
+    <!-- 图片视图 -->
     <ImageView
-        android:id="@+id/iv_fullscreen"
+        android:id="@+id/iv_media"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:contentDescription="图片预览"
-        android:scaleType="centerCrop"/>
+        android:layout_gravity="center"
+        android:contentDescription="媒体预览"
+        android:scaleType="fitCenter"/>
 
-</LinearLayout>
+    <!-- 视频播放按钮（仅视频显示） -->
+    <ImageView
+        android:id="@+id/iv_play_button"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@drawable/ic_video_indicator"
+        android:visibility="gone"
+        android:layout_gravity="center"/>
+
+</FrameLayout>

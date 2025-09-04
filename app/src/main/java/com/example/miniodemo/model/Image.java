@@ -15,6 +15,8 @@ public class Image implements Serializable {
     private Integer folder_id;
     private String url;
     private boolean isSelected = false;
+    private String type;
+    private String thumbnailUrl;
 
     public Image() {}
 
@@ -116,6 +118,31 @@ public class Image implements Serializable {
 
     public void setSelected(boolean selected) {
         isSelected = selected;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public String getThumbnailUrl() {
+        return thumbnailUrl;
+    }
+
+    public void setThumbnailUrl(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+    }
+
+    public boolean isVideo() {
+        return content_type != null && content_type.startsWith("video/");
+    }
+
+    // 判断是否为图片
+    public boolean isImage() {
+        return content_type != null && content_type.startsWith("image/");
     }
 }
     

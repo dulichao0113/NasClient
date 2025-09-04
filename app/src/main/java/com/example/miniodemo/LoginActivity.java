@@ -26,20 +26,26 @@ public class LoginActivity extends AppCompatActivity {
     private EditText etEmail, etPassword;
     private Button btnLogin, btnRegister;
     private ApiService apiService;
+    private EditText etIpAddress;
+    private String customIpAddress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
+        MemoryCheck.checkLargeHeap(this);
         // 初始化视图
         etEmail = findViewById(R.id.et_email);
         etPassword = findViewById(R.id.et_password);
         btnLogin = findViewById(R.id.btn_login);
         btnRegister = findViewById(R.id.btn_register);
+        etIpAddress = findViewById(R.id.et_ip_address);
 
-        // 初始化API服务
-        apiService = RetrofitClient.getInstance(getApplicationContext()).getApiService();
+        SharedPreferences sp = getSharedPreferences("user_prefs", MODE_PRIVATE);
+        String savedIp = sp.getString("server_ip", "");
+        if (!TextUtils.isEmpty(savedIp)) {
+            etIpAddress.setText(savedIp);
+        }
 
         // 检查是否已登录
         checkLoggedInStatus();
@@ -49,6 +55,12 @@ public class LoginActivity extends AppCompatActivity {
 
         // 注册按钮点击事件
         btnRegister.setOnClickListener(v -> {
+            customIpAddress = etIpAddress.getText().toString().trim();
+            if (TextUtils.isEmpty(customIpAddress)) {
+                Toast.makeText(LoginActivity.this, "请输入IP地址", Toast.LENGTH_LONG).show();
+                return;
+            }
+            apiService = RetrofitClient.getInstance(getApplicationContext(), customIpAddress).getApiService();
             Intent intent = new Intent(LoginActivity.this, RegisterActivity.class);
             startActivity(intent);
         });
@@ -59,6 +71,9 @@ public class LoginActivity extends AppCompatActivity {
         String token = sp.getString("token", null);
 
         if (!TextUtils.isEmpty(token)) {
+            // 初始化API服务
+            String savedIp = sp.getString("server_ip", "");
+            apiService = RetrofitClient.getInstance(getApplicationContext(), savedIp).getApiService();
             // 跳转到相册列表界面
             Intent intent = new Intent(LoginActivity.this, AlbumListActivity.class);
             startActivity(intent);
@@ -75,6 +90,10 @@ public class LoginActivity extends AppCompatActivity {
             Toast.makeText(this, "请输入邮箱和密码", Toast.LENGTH_SHORT).show();
             return;
         }
+
+        // 获取用户输入的IP地址
+        customIpAddress = etIpAddress.getText().toString().trim();
+        apiService = RetrofitClient.getInstance(getApplicationContext(), customIpAddress).getApiService();
 
         // 创建登录请求
         LoginRequest request = new LoginRequest(email, password);
@@ -95,6 +114,7 @@ public class LoginActivity extends AppCompatActivity {
                             .putString("username", response.body().getUser().getUsername())
                             .putString("email", email)  // 保存用户输入的邮箱
                             .putString("password", password)  // 保存用户输入的密码
+                            .putString("server_ip", customIpAddress)
                             .apply();
 
                     // 跳转到相册列表界面

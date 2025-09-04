@@ -6,8 +6,10 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.text.TextUtils;
 import android.text.format.Formatter;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -18,8 +20,15 @@ public class RetrofitClient {
     private static RetrofitClient instance;
     private Retrofit retrofit;
 
-    private RetrofitClient(Context context) {
-        String ipAddress = getLocalIpAddress(context);
+    private RetrofitClient(Context context, String customIp) {
+
+        String ipAddress = null;
+        if (!TextUtils.isEmpty(customIp)) {
+            ipAddress = customIp;
+        } else {
+            ipAddress = getLocalIpAddress(context);
+        }
+
         BASE_URL = "http://" + (ipAddress != null ? ipAddress : "192.168.29.253") + ":3000/api/";
         // 添加日志拦截器
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
@@ -38,7 +47,16 @@ public class RetrofitClient {
 
     public static synchronized RetrofitClient getInstance(Context context) {
         if (instance == null) {
-            instance = new RetrofitClient(context);
+            SharedPreferences sp = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE);
+            String savedIp = sp.getString("server_ip", "");
+            instance = new RetrofitClient(context, savedIp);
+        }
+        return instance;
+    }
+
+    public static synchronized RetrofitClient getInstance(Context context, String customIp) {
+        if (instance == null) {
+            instance = new RetrofitClient(context, customIp);
         }
         return instance;
     }

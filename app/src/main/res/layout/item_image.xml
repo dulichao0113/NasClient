@@ -12,6 +12,20 @@
         android:scaleType="centerCrop"
         android:contentDescription="图片" />
 
+    <!-- 视频标识 -->
+    <ImageView
+        android:id="@+id/iv_video_indicator"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_video_indicator"
+        android:visibility="gone"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="4dp"
+        android:background="@android:color/black"
+        android:padding="2dp"
+        android:contentDescription="视频标识"/>
+
     <CheckBox
         android:id="@+id/cb_select"
         android:layout_width="wrap_content"

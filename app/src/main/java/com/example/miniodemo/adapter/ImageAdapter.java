@@ -99,13 +99,24 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
     public void onBindViewHolder(@NonNull ImageViewHolder holder, int position) {
         Image image = imageList.get(position);
 
+        // 显示视频/图片标识
+        holder.ivVideoIndicator.setVisibility(
+                "video".equals(image.getType()) ? View.VISIBLE : View.GONE
+        );
+
+        // 加载缩略图
+        String loadUrl = "video".equals(image.getType())
+                ? image.getUrl()
+                : image.getUrl();
+
         // 加载图片
         Glide.with(context)
-                .load(image.getUrl())
+                .load(loadUrl)
                 .placeholder(R.drawable.ic_image_placeholder)
                 .error(R.drawable.ic_image_error)
                 .centerCrop()
                 .into(holder.ivImage);
+
 
         // 显示或隐藏选择框
         holder.cbSelect.setVisibility(isSelectionMode ? View.VISIBLE : View.GONE);
@@ -113,7 +124,6 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
 
         // 设置点击事件
         holder.itemView.setOnClickListener(v -> {
-            android.util.Log.i("dulichao:","listener:"+listener+", isSelectionMode:"+isSelectionMode);
             if (listener != null) {
                 if (isSelectionMode) {
                     toggleSelection(position);
@@ -153,12 +163,14 @@ public class ImageAdapter extends RecyclerView.Adapter<ImageAdapter.ImageViewHol
         ImageView ivImage;
         CheckBox cbSelect;
         RelativeLayout container;
+        ImageView ivVideoIndicator;
 
         public ImageViewHolder(@NonNull View itemView) {
             super(itemView);
             ivImage = itemView.findViewById(R.id.iv_image);
             cbSelect = itemView.findViewById(R.id.cb_select);
             container = itemView.findViewById(R.id.container);
+            ivVideoIndicator = itemView.findViewById(R.id.iv_video_indicator);
         }
     }
 }
